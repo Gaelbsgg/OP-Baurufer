@@ -1,4 +1,4 @@
-const apiBase = "http://localhost:3000";
+const apiBase = "https://op-baurufer.onrender.com/";
 
 async function carregarStatuses() {
   try {
