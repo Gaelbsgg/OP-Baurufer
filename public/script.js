@@ -1,4 +1,4 @@
-const apiBase = "https://op-baurufer.onrender.com/";
+const apiBase = "https://retrocessive-unaproned-jolyn.ngrok-free.dev";
 
 async function carregarStatuses() {
   try {
