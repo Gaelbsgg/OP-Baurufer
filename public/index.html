@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BAURUFER - Acompanhamento de Produção</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="header">
+    <img src="logo.png" alt="BAURUFER Logo" class="logo">
+    <h1>Acompanhamento de Ordens de Produção</h1>
+    <p id="avisoAtualizacao" style="color: #666; font-style: italic; margin: 8px 0;"></p>
+  </header>
+
+  <section class="filters">
+    <div>
+      <label for="statusSelect">Status do Serviço:</label>
+      <select id="statusSelect">
+        <option value="">Todos</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="dataEntrega">Data de Entrega:</label>
+      <input type="date" id="dataEntrega" />
+    </div>
+
+    <button id="btnFiltrar">Filtrar</button>
+  </section>
+
+  <main>
+    <table id="tabelaOrdens">
+      <thead>
+        <tr>
+          <th>Status</th>
+          <th>Cliente</th>
+          <th>Data Abertura</th>
+          <th>Data Entrega</th>
+          <th>Hora</th>
+          <th>Funcionário</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="6" class="loading">Carregando...</td></tr>
+      </tbody>
+    </table>
+  </main>
+
+  <footer>
+    <p>© 2025 BAURUFER - Sistema de Acompanhamento de Produção</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
