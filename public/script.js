@@ -1,18 +1,17 @@
-const apiBase = "https://retrocessive-unaproned-jolyn.ngrok-free.dev";
+const apiBase = "http://172.16.2.1:3000";
 
 async function carregarStatuses() {
   try {
     const res = await fetch(`${apiBase}/statuses`);
     const data = await res.json();
     const select = document.getElementById('statusSelect');
-    data.forEach(item => {
-      if (item.STATUS) {
-        const opt = document.createElement('option');
-        opt.value = item.STATUS;
-        opt.textContent = item.STATUS;
-        select.appendChild(opt);
-      }
-    });
+data.forEach(item => {
+  const opt = document.createElement('option');
+  opt.value = item.CODACAO;
+  opt.textContent = item.DESCRICAO;
+  select.appendChild(opt);
+});
+
   } catch (err) {
     console.error("Erro ao carregar status:", err);
   }
