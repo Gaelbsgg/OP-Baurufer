@@ -6,113 +6,118 @@ const app = express();
 app.use(cors());
 app.use(express.static('public'));
 
-// 🔧 CONFIGURAÇÃO DO BANCO DE DADOS FIREBIRD
+// 🔧 CONFIG FIREBIRD
 const dbOptions = {
-  host: 'localhost',          // ou o IP do servidor Firebird
-  port: 3050,                 // porta padrão
-  database: 'C:\\TGA\\Dados\\TGA.FDB', // ✅ caminho corrigido
-  user: 'SYSDBA',             // usuário do banco
-  password: 'masterkey',      // senha do banco
+  host: 'localhost',
+  port: 3050,
+  database: 'C:\\TGA\\Dados\\TGA.FDB',
+  user: 'SYSDBA',
+  password: 'masterkey',
   lowercase_keys: false,
   role: null,
-  pageSize: 4096
+  pageSize: 4096,
+  charset: 'ISO8859_1'
 };
 
-// Helper para rodar queries
-function runQuery(query, params, res) {
-  Firebird.attach(dbOptions, function(err, db) { // ✅ corrigido Firebird.attach
+// 🔧 Executa queries no Firebird
+function runQuery(query, params = [], res) {
+  Firebird.attach(dbOptions, (err, db) => {
     if (err) {
-      console.error("❌ Erro ao conectar ao Firebird:", err.message);
-      return res.status(500).json({ error: "Erro ao conectar ao banco: " + err.message });
+      console.error("❌ Erro ao conectar ao Firebird:", err);
+      return res.status(500).json({ error: "Erro ao conectar ao banco." });
     }
 
-    db.query(query, params, function(err, result) {
-  if (err) {
-    console.error("Firebird query error:", err);
-    db.detach();
-    return res.status(500).json({ error: "Erro na query: " + err.message });
-  }
+    db.query(query, params, (err, result) => {
 
-  // 🔹 Conversão dos campos do Firebird para texto legível
-  const formatted = result.map(row => {
-    const obj = {};
-    for (const key in row) {
-      let value = row[key];
-
-      // Converte buffers (como os de CODACAO)
-      if (Buffer.isBuffer(value)) {
-        value = value.toString('utf8').trim();
+      if (err) {
+        console.error("❌ Erro na query Firebird:", err);
+        db.detach();
+        return res.status(500).json({ error: "Erro ao executar a consulta." });
       }
 
-      // Converte datas em formato ISO para dd/mm/yyyy
-      if (value instanceof Date) {
-        value = new Date(value).toLocaleDateString('pt-BR');
-      }
+      // 🔄 Formatar saída para evitar buffers e datas mal formatadas
+      const formatted = result.map(row => {
+        const data = {};
 
-      // Converte valores nulos para traço
-      if (value === null || value === undefined || value === '') {
-        value = '-';
-      }
+        for (let key in row) {
+          let value = row[key];
 
-      obj[key] = value;
-    }
-    return obj;
-  });
+          if (Buffer.isBuffer(value)) {
+            value = value.toString("latin1").trim();
+          }
 
-  db.detach();
-  res.json(formatted);
-});
+          // Formata datas
+          if (value instanceof Date) {
+            value = value.toLocaleDateString("pt-BR");
+          }
 
+          // Mantém NULL se vier do banco
+          if (value === null) value = null;
+
+          data[key] = value;
+        }
+
+        return data;
+      });
+
+      db.detach();
+      return res.json(formatted);
+    });
   });
 }
 
-// Endpoint para buscar ordens com filtros
+// 📌 Endpoint: Buscar ordens de serviço
 app.get('/ordens', (req, res) => {
-  const status = req.query.status;
-  const dataEntrega = req.query.dataEntrega;
+  const { status, dataEntrega } = req.query;
 
   let query = `
-  SELECT
-    M.IDMOV,
-    R.CODACAO AS STATUS_SERVICO,
-    F.NOMEFANTASIA AS NOME_CLIENTE,
-    M.DATAEMISSAO AS DATA_ABERTURA,
-    M.DATAENTREGA AS DATA_ENTREGA,
-    M.CODVEN1 AS FUNCIONARIO
-  FROM TMOV M
-  LEFT JOIN TMOVREGISTRO R ON R.IDMOV = M.IDMOV
-  LEFT JOIN FCFO F ON F.CODCFO = M.CODCFO
-  WHERE M.CODTMV = '2.2.02'
-`;
-
+      SELECT
+        M.IDMOV,
+        COALESCE(A.DESCRICAO, 'SEM STATUS') AS STATUS_SERVICO,
+        F.NOMEFANTASIA AS NOME_CLIENTE,
+        M.DATAEMISSAO AS DATA_ABERTURA,
+        M.DATAENTREGA AS DATA_ENTREGA,
+        M.CODVEN1 AS FUNCIONARIO
+      FROM TMOV M
+      LEFT JOIN TMOVREGISTRO R ON R.IDMOV = M.IDMOV
+      LEFT JOIN TACAO A ON A.CODACAO = R.CODACAO
+      LEFT JOIN FCFO F ON F.CODCFO = M.CODCFO
+      WHERE M.CODTMV = '2.2.02'
+  `;
 
   const params = [];
+
   if (status) {
     query += ` AND R.CODACAO = ?`;
     params.push(status);
   }
+
   if (dataEntrega) {
     query += ` AND CAST(M.DATAENTREGA AS DATE) = CAST(? AS DATE)`;
     params.push(dataEntrega);
   }
 
   query += ` ORDER BY M.DATAEMISSAO DESC`;
+
   runQuery(query, params, res);
 });
 
-// Endpoint para listar status
+// 📌 Endpoint: Listar TODOS os status existentes no banco (TACAO)
 app.get('/statuses', (req, res) => {
-  const q = `
-    SELECT DISTINCT R.CODACAO AS STATUS
-    FROM TMOV M
-    LEFT JOIN TMOVREGISTRO R ON R.IDMOV = M.IDMOV
-    WHERE M.CODTMV = '2.2.02'
-    ORDER BY R.CODACAO
+  const query = `
+      SELECT 
+        CODACAO,
+        DESCRICAO
+      FROM TACAO
+      ORDER BY DESCRICAO
   `;
-  runQuery(q, [], res);
+  runQuery(query, [], res);
 });
 
+
+// 📡 Porta do servidor
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor rodando em 0.0.0.0:${PORT}`);
 });
