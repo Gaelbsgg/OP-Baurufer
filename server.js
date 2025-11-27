@@ -10,13 +10,13 @@ app.use(express.static('public'));
 const dbOptions = {
   host: 'localhost',
   port: 3050,
-  database: 'C:\\TGA\\Dados\\TGA.FDB',
+  database: 'C:\\TGA\\Dados\\BAURU.FDB',
   user: 'SYSDBA',
   password: 'masterkey',
   lowercase_keys: false,
   role: null,
   pageSize: 4096,
-  charset: 'ISO8859_1'
+  charset: 'none'
 };
 
 // 🔧 Executa queries no Firebird
