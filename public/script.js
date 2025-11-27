@@ -1,4 +1,4 @@
-const apiBase = "http://172.16.2.1:3000";
+const apiBase = "http://192.168.1.179:3000";
 
 async function carregarStatuses() {
   try {
